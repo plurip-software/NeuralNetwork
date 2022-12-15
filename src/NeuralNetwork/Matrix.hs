@@ -1,15 +1,36 @@
 module NeuralNetwork.Matrix
   ( Matrix(..)
-  , (°)
+  , initMtx
+  , randomizeWithInt
+  , (><)
   ) where
 
-import           Data.List  (groupBy)
-import           Data.Maybe (mapMaybe)
+import           Data.List     (groupBy)
+import           Data.Maybe    (mapMaybe)
 import           Prelude
+import           System.Random (getStdRandom, randomR)
 
 newtype Matrix a =
   Matrix [[a]]
   deriving (Show)
+
+initMtx :: Rows -> Cols -> a -> Matrix a
+initMtx rows cols a = Matrix . replicate rows $ replicate cols a
+
+data Range =
+  Range Int Int
+  deriving (Show)
+
+getRandomInt :: Range -> IO Int
+getRandomInt (Range from to) = getStdRandom (randomR (from, to))
+
+randomizeWithInt :: Range -> Matrix Int -> Matrix (IO Int)
+randomizeWithInt range (Matrix mtx) =
+  Matrix $ map (\row -> map (\_ -> getRandomInt range) row) mtx
+
+type Rows = Int
+
+type Cols = Int
 
 toList :: Matrix a -> [[a]]
 toList (Matrix mtx) = mtx
@@ -47,6 +68,6 @@ multiply mtx mtx' =
       sumCells (cells, cells') = sum $ zipWith (*) cells cells'
    in Matrix $ map (map sumCells) groupedTpls
 
-infixl 5 °
+infixl 5 ><
 
-(°) = multiply
+(><) = multiply
