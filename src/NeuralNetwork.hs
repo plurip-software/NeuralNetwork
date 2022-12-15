@@ -8,7 +8,7 @@ data NeuralNetwork =
   NeuralNetwork Input Hidden Output
 
 newtype Layer =
-  Layer Matrix
+  Layer (Matrix Int)
 
 newtype Input =
   Input Layer
