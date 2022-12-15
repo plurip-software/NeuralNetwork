@@ -1,65 +1,52 @@
 module NeuralNetwork.Matrix
   ( Matrix(..)
-  , Dimensions(..)
-  , empty
-  , getRow
+  , (°)
   ) where
 
+import           Data.List  (groupBy)
+import           Data.Maybe (mapMaybe)
 import           Prelude
 
-newtype Matrix =
-  Matrix [Row]
+newtype Matrix a =
+  Matrix [[a]]
   deriving (Show)
 
-newtype Row =
-  Row Cells
-  deriving (Show)
+toList :: Matrix a -> [[a]]
+toList (Matrix mtx) = mtx
 
-newtype Column =
-  Column Cells
-  deriving (Show)
+firstRow :: Matrix a -> Maybe [a]
+firstRow = getRow 0
 
-type Cells = [Cell]
+countCols :: Matrix a -> Int
+countCols mtx =
+  case firstRow mtx of
+    Just cells -> length cells
+    _          -> 0
 
-data Cell =
-  Cell Location Value
-  deriving (Show)
-
-data Location =
-  Location Row' Col
-  deriving (Show)
-
-type Row' = Int
-
-type Col = Int
-
-type Value = Int
-
-data Dimensions =
-  Dimensions Rows Cols
-  deriving (Show)
-
-type Rows = Int
-
-type Cols = Int
-
-empty :: Dimensions -> Matrix
-empty (Dimensions rows cols) =
-  Matrix $
-  map
-    (\row -> Row $ map (\col -> Cell (Location row col) 0) [0 .. (cols - 1)])
-    [0 .. (rows - 1)]
-
-getRow :: Row' -> Matrix -> Maybe Row
-getRow row (Matrix rows) =
-  if row < length rows
-    then Just $ rows !! row
+getRow :: Int -> Matrix a -> Maybe [a]
+getRow idx (Matrix mtx) =
+  if idx >= 0 && idx < length mtx
+    then Just $ mtx !! idx
     else Nothing
 
-getCol :: Col -> Matrix -> Maybe Column
-getCol col (Matrix rows) = 
-  if col <= length $ head 
-  map (!! col) rows
-  
--- transpose :: Matrix -> Matrix
--- transpose
+getCol :: Int -> Matrix a -> Maybe [a]
+getCol idx mtx =
+  if idx >= 0 && idx < countCols mtx
+    then Just . map (\row -> row !! idx) $ toList mtx
+    else Nothing
+
+getCols :: Matrix a -> [[a]]
+getCols mtx = mapMaybe (flip getCol mtx) [0 .. (countCols mtx) - 1]
+
+multiply :: (Num a, Eq a) => Matrix a -> Matrix a -> Matrix a
+multiply mtx mtx' =
+  let mtxRows = toList mtx
+      mtxCols = getCols mtx'
+      tpls = (,) <$> mtxRows <*> mtxCols
+      groupedTpls = groupBy (\(cells, _) (cells', _) -> cells == cells') tpls
+      sumCells (cells, cells') = sum $ zipWith (*) cells cells'
+   in Matrix $ map (map sumCells) groupedTpls
+
+infixl 5 °
+
+(°) = multiply
